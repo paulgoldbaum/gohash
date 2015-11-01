@@ -3,19 +3,27 @@ package gohash
 import (
 	"net"
 	"log"
+	"os"
 )
 
-var m = make(map[string]*string)
+var hash *Hash
 
 func Init() {
+	hash = new(Hash)
+	hash.Init(10)
+
 	log.Println("Listening on 0.0.0.0:7777")
 	address, _ := net.ResolveTCPAddr("tcp4", "0.0.0.0:7777")
 	listener, _ := net.ListenTCP("tcp", address)
 
 	for {
-		conn, _ := listener.AcceptTCP()
+		conn, err := listener.AcceptTCP()
+		if err != nil {
+			log.Fatal("Could not bind to given address: ", err)
+			os.Exit(1)
+		}
 		log.Println("Accepting connection from", conn.RemoteAddr().String())
-		go handleConnection(conn)
+		handleConnection(conn)
 	}
 }
 
@@ -52,17 +60,16 @@ func sendResponse(conn *net.TCPConn, data *string) {
 }
 
 func handleSet(key, value *string) *string {
-	copyOfValue := string(*value)
-	m[*key] = &copyOfValue
+	hash.Set(key, value)
 	return value
 }
 
 func handleGet(key *string) *string {
-	return m[*key]
+	return hash.Get(key)
 }
 
 func handleDelete(key *string) *string {
-	value := m[*key]
-	delete(m, *key)
+	value := hash.Get(key)
+	hash.Unset(key)
 	return value
 }
