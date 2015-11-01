@@ -1,0 +1,14 @@
+package gohash;
+
+message Request {
+
+    enum RequestType {
+        GET = 0;
+        SET = 1;
+        DELETE = 2;
+    }
+
+    required RequestType type = 1;
+    required string key = 2;
+    optional string value = 3;
+}
