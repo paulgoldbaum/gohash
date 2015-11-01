@@ -3,9 +3,9 @@ package gohash
 import (
 	"net"
 	"log"
-	"encoding/binary"
-	"github.com/golang/protobuf/proto"
 )
+
+var m = make(map[string]*string)
 
 func Init() {
 	log.Println("Listening on 0.0.0.0:7777")
@@ -13,33 +13,56 @@ func Init() {
 	listener, _ := net.ListenTCP("tcp", address)
 
 	for {
-		connection, _ := listener.Accept()
-		log.Println("Accepting connection from", connection.RemoteAddr().String())
-		go handleConnection(connection)
+		conn, _ := listener.AcceptTCP()
+		log.Println("Accepting connection from", conn.RemoteAddr().String())
+		go handleConnection(conn)
 	}
 }
 
-func handleConnection(connection net.Conn) {
+func handleConnection(conn *net.TCPConn) {
+	defer conn.Close()
 
 	for {
-		sizeBuffer := make([]byte, 4)
-		connection.Read(sizeBuffer)
-
-		size := binary.BigEndian.Uint32(sizeBuffer)
-		if size > 4096 {
-			log.Fatal("Specified packet size is too large")
-			return
-		}
-
-		buffer := make([]byte, size)
-		connection.Read(buffer)
 		request := &Request{}
-		err := proto.Unmarshal(buffer, request)
-		if err != nil {
-			log.Fatal("Error during unmarshaling", err)
-			return
-		}
-
-		log.Println(request.GetType(), request.GetKey(), request.GetValue())
+		Receive(conn, request)
+		handleMessage(conn, request)
 	}
+}
+
+func handleMessage(conn *net.TCPConn, request *Request) {
+
+	var result *string
+	switch request.GetType() {
+	case Request_SET:
+		result = handleSet(request.Key, request.Value)
+	case Request_GET:
+		result = handleGet(request.Key)
+	case Request_DELETE:
+		result = handleDelete(request.Key)
+	}
+
+	sendResponse(conn, result)
+}
+
+func sendResponse(conn *net.TCPConn, data *string) {
+	response := &Response{
+		Value: data,
+	}
+	Send(conn, response)
+}
+
+func handleSet(key, value *string) *string {
+	copyOfValue := string(*value)
+	m[*key] = &copyOfValue
+	return value
+}
+
+func handleGet(key *string) *string {
+	return m[*key]
+}
+
+func handleDelete(key *string) *string {
+	value := m[*key]
+	delete(m, *key)
+	return value
 }

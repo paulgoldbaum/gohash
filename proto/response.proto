@@ -1,0 +1,7 @@
+package gohash;
+
+message Response {
+
+    optional string value = 1;
+
+}
