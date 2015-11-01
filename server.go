@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-var hash *Hash
+var hash *HashTable
 
 func Init() {
-	hash = new(Hash)
+	hash = new(HashTable)
 	hash.Init(10)
 
 	log.Println("Listening on 0.0.0.0:7777")

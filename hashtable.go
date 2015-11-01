@@ -11,18 +11,18 @@ type Record struct {
 	deleted bool
 }
 
-type Hash struct {
+type HashTable struct {
 	size, capacity uint32
 	data []Record
 }
 
-func (h *Hash) Init(capacity uint32) {
+func (h *HashTable) Init(capacity uint32) {
 	h.size = 0
 	h.capacity = capacity
 	h.data = make([]Record, capacity)
 }
 
-func (h *Hash) Set(key, value *string) {
+func (h *HashTable) Set(key, value *string) {
 	record := h.getRecord(key, true)
 	if record.key == nil {
 		h.size++
@@ -31,7 +31,7 @@ func (h *Hash) Set(key, value *string) {
 	record.value = value
 }
 
-func (h *Hash) Get(key *string) *string {
+func (h *HashTable) Get(key *string) *string {
 	record := h.getRecord(key, false)
 	if record == nil {
 		return nil
@@ -39,7 +39,7 @@ func (h *Hash) Get(key *string) *string {
 	return record.value
 }
 
-func (h *Hash) Unset(key *string) {
+func (h *HashTable) Unset(key *string) {
 	record := h.getRecord(key, false)
 	if record == nil {
 		return
@@ -51,7 +51,7 @@ func (h *Hash) Unset(key *string) {
 }
 
 // Use quadratic probing to find records
-func (h *Hash) getRecord(key *string, mayBeEmpty bool) *Record {
+func (h *HashTable) getRecord(key *string, mayBeEmpty bool) *Record {
 	log.Println("getRecord", key, mayBeEmpty)
 
 	for offset := uint32(0); offset < h.capacity; offset++ {
@@ -77,7 +77,7 @@ func (h *Hash) getRecord(key *string, mayBeEmpty bool) *Record {
 	return nil
 }
 
-func (h *Hash) hash(key *string, offset uint32) uint32 {
+func (h *HashTable) hash(key *string, offset uint32) uint32 {
 	data := []byte(*key)
 	return (murmur3.Sum32(data) + offset) % h.capacity
 }
